@@ -13,7 +13,7 @@ export default function useSyncState(
 
   return [
     stateAtPath,
-    (callbackOrData: any) => {
+    (callbackOrData: any, origin: string = `local`) => {
       let newPath = path; // Avoid mutating the closure value of path
       // Do NOT use above stateAtPath, if you do, you get stale value in the closure if you are reusing this setter callback
       let stateAtPath = store.getStateAtPath(subtree, newPath);
@@ -67,7 +67,7 @@ export default function useSyncState(
       patches.forEach((patch: any, index: number) => {
         store.dispatch({
           type: 'PATCH',
-          payload: { patch, inversePatch: inversePatches[index], subtree },
+          payload: { patch, inversePatch: inversePatches[index], subtree, origin },
         });
       });
 
