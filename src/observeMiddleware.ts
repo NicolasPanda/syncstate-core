@@ -1,6 +1,7 @@
 import get from 'lodash.get';
 import immerPathToJsonPatchPath from './utils/immerPathToJsonPatchPath';
 import jsonPatchPathToImmerPath from './utils/jsonPatchPathToImmerPath';
+import isPathWithin from './utils/isPathWithin';
 
 export type Observer = {
   subtree: string;
@@ -22,8 +23,9 @@ export const createObserveMiddleware = (observers: Map<number, Observer>) => {
           return;
         }
 
-        // If path above the observer path changes call observer for all cases
-        if (observer.path.startsWith(payloadPath)) {
+        // If path above the observer path changes call observer for all cases.
+        // Compared by path segment: "/cards/1" is not above "/cards/10".
+        if (isPathWithin(observer.path, payloadPath)) {
           callObserver(observer, store, action);
         }
 
@@ -45,9 +47,11 @@ export const createObserveMiddleware = (observers: Map<number, Observer>) => {
           }
         }
 
-        //If depth is infinity, call for any number of levels below observer path
+        // If depth is infinity, call for any number of levels below observer
+        // path — below it segment by segment: an observer of "/cards/1" is not
+        // woken by "/cards/10".
         else if (observer.depth === Infinity) {
-          if (payloadPath.startsWith(observer.path)) {
+          if (isPathWithin(payloadPath, observer.path)) {
             callObserver(observer, store, action);
           }
         }

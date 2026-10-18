@@ -2,6 +2,7 @@ import { produce } from 'immer';
 import get from 'lodash.get';
 import immerPathToJsonPatchPath from './utils/immerPathToJsonPatchPath';
 import jsonPatchPathToImmerPath from './utils/jsonPatchPathToImmerPath';
+import isPathWithin from './utils/isPathWithin';
 
 export type Interceptor = {
   subtree: string;
@@ -31,8 +32,10 @@ export const createInterceptMiddleware = (
           return;
         }
 
-        // If path above the interceptor path changes call interceptor for all cases
-        if (interceptor.path.startsWith(payloadPath)) {
+        // If path above the interceptor path changes call interceptor for all
+        // cases. Compared by path segment: "/ctasCategories" is not above
+        // "/ctas".
+        if (isPathWithin(interceptor.path, payloadPath)) {
           discardAction = callInterceptor(interceptor, store, action);
         }
 
@@ -54,9 +57,11 @@ export const createInterceptMiddleware = (
           }
         }
 
-        //If depth is infinity, call for any number of levels below interceptor path
+        // If depth is infinity, call for any number of levels below
+        // interceptor path — below it segment by segment: an interceptor of
+        // "/ctas" is not handed "/ctasCategories/0/name".
         else if (interceptor.depth === Infinity) {
-          if (payloadPath.startsWith(interceptor.path)) {
+          if (isPathWithin(payloadPath, interceptor.path)) {
             discardAction = callInterceptor(interceptor, store, action);
           }
         }
