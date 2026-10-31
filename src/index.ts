@@ -1,9 +1,5 @@
-import {
-  produce,
-  applyPatches,
-  produceWithPatches,
-  enablePatches,
-} from 'immer';
+import { produce, enablePatches } from 'immer';
+import applyPatch from './utils/applyPatch';
 import immerPathToJsonPatchPath from './utils/immerPathToJsonPatchPath';
 
 import DocStore from './DocStore';
@@ -32,17 +28,17 @@ function createTopReducer(maxPatches: number) {
     switch (action.type) {
       case 'PATCH': {
         const { subtree, patch, inversePatch } = action.payload;
-        const patches = appendPatch(
-          state[subtree].patches,
-          { patch, inversePatch },
-          maxPatches
-        );
-        return produce(state, (draftState: any) => {
-          draftState[subtree].state = applyPatches(draftState[subtree].state, [
-            { ...patch, path: jsonPatchPathToImmerPath(patch.path) },
-          ]);
-          draftState[subtree].patches = patches;
-        });
+        return {
+          ...state,
+          [subtree]: {
+            state: applyPatch(state[subtree].state, patch),
+            patches: appendPatch(
+              state[subtree].patches,
+              { patch, inversePatch },
+              maxPatches
+            ),
+          },
+        };
       }
 
       case 'CREATE_SUBTREE': {
